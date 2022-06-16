@@ -21,7 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextButton.styleFrom(primary: Colors.white),
           child: Text('Edit'),
         ),
-        title: Text('Today'),
+        title: Text('Diary'),
         actions: [Icon(Icons.event_note_outlined)],
       ),
       body: Padding(
@@ -34,26 +34,18 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(
               height: 20,
             ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Diary:',
-                    style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-            SingleChildScrollView(
+            Expanded(
               child: Container(
-                height: 330,
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                child: ListView.builder(
+                // margin: const EdgeInsets.symmetric(horizontal: 24),
+                child: ListView(
+                  shrinkWrap: true,
                   padding: EdgeInsets.all(0),
-                  itemCount: 4,
-                  itemBuilder: (context, i) => MealCard(index: i),
+                  children: [
+                    MealCard('breakfast'),
+                    MealCard('lunch'),
+                    MealCard('dinner'),
+                    MealCard('snacks'),
+                  ],
                 ),
               ),
             ),

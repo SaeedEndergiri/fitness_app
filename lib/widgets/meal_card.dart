@@ -1,107 +1,131 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:fitness_app/screens/add_food_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/foods.dart';
 
 class MealCard extends StatefulWidget {
-  final int index;
-  const MealCard({
-    required this.index,
-  });
+  final String mealType;
+  const MealCard(
+    this.mealType,
+  );
 
   @override
   State<MealCard> createState() => _MealCardState();
 }
 
 class _MealCardState extends State<MealCard> {
-  var _mealType;
-
-  String get mealTypeText {
-    switch (widget.index) {
-      case 0:
-        _mealType = 'Breakfast';
-        break;
-      case 1:
-        _mealType = 'Lunch';
-        break;
-      case 2:
-        _mealType = 'Dinner';
-        break;
-      case 3:
-        _mealType = 'Snacks';
-        break;
-    }
-    return _mealType;
+  void openAddFoodScreen(String mealType) {
+    Navigator.of(context)
+        .pushNamed(AddFoodScreen.routeName, arguments: mealType);
   }
 
-  Future<int> mealCount(String mealType) async {
-    mealType = mealType.toLowerCase();
-    int count = -1;
-    var ref = await FirebaseFirestore.instance
-        .collection('food')
-        .where('categories.$mealType', isNull: false)
-        .get();
-    count = ref.docs.length;
-    print(count);
-    return count;
+  String capitalize(String text) {
+    if (text.trim().isEmpty) return "";
+
+    return "${text[0].toUpperCase()}${text.substring(1)}";
   }
 
   @override
   Widget build(BuildContext context) {
-    mealTypeText;
-    return Card(
-      elevation: 4,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(5.0),
-            child: Row(
-              children: [
-                Text(
-                  '$_mealType',
-                  style: TextStyle(fontSize: 23),
-                )
-              ],
-            ),
-          ),
-          StreamBuilder(
-              stream: FirebaseFirestore.instance
-                  .collection('food')
-                  .where('categories.${_mealType.toLowerCase()}', isNull: false)
-                  .snapshots(),
-              builder: (ctx, AsyncSnapshot<QuerySnapshot> foodSnapshot) {
-                if (foodSnapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-                final foodDocs = foodSnapshot.data!.docs;
-                return Container(
-                  height: 30,
-                  padding: const EdgeInsets.all(5),
-                  child: ListView.builder(
-                      itemCount: foodDocs.length,
-                      itemBuilder: (ctx, i) {
-                        return Text(foodDocs[i]['name']);
-                      }),
-                );
-              }),
-          Row(
-            //mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              TextButton(
-                onPressed: () {},
-                child: Text('Add food'),
-              ),
-              Expanded(child: SizedBox()),
-              IconButton(
-                onPressed: () {},
-                icon: Icon(Icons.more_horiz),
-              ),
-            ],
-          )
-        ],
-      ),
+    return FutureBuilder(
+      future: Provider.of<Foods>(context, listen: false)
+          .fetchAndSetFoods(widget.mealType),
+      builder: (ctx, dataSnapshot) {
+        // print(dataSnapshot);
+        if (dataSnapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (dataSnapshot.error != null) {
+          return Text('Error Occurred');
+        } else {
+          return Consumer<Foods>(
+            builder: (context, foodData, child) {
+              var meals = foodData.mealTypeItems(widget.mealType);
+              return Container(
+                margin: EdgeInsets.symmetric(horizontal: 0, vertical: 5),
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${capitalize(widget.mealType)}',
+                          style: TextStyle(fontSize: 23),
+                        ),
+                        Text(
+                          '${Foods.totalCalories(meals)}',
+                          style: TextStyle(fontSize: 23),
+                        ),
+                      ],
+                    ),
+                    ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: meals.length,
+                        itemBuilder: (ctx, i) {
+                          //print(foodData.items.length);
+                          return Container(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Divider(),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      meals[i].name,
+                                      style: TextStyle(fontSize: 18),
+                                    ),
+                                    Text(
+                                      meals[i].nutritions!.calories.toString(),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                                if (meals[i].description.isNotEmpty)
+                                  Text(
+                                    meals[i].description,
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                          onPressed: () {
+                            openAddFoodScreen(widget.mealType);
+                          },
+                          child: Text('Add food'.toUpperCase()),
+                        ),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(100),
+                          onTap: () {},
+                          child: Icon(Icons.more_horiz),
+                        )
+                      ],
+                    )
+                  ],
+                ),
+              );
+            },
+          );
+        }
+      },
     );
   }
 }
