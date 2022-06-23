@@ -6,20 +6,22 @@ import 'category.dart';
 
 class Food {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  String id;
+  String? id;
   String name;
   String description;
+  String mealType;
   String imageUrl;
-  String servingSize;
+  int servingSize;
   String servingUnit;
   int servings;
   Nutrition? nutritions;
   List<Category>? categories;
 
   Food({
-    required this.id,
+    this.id,
     required this.name,
     required this.description,
+    required this.mealType,
     required this.imageUrl,
     required this.servingSize,
     required this.servingUnit,
@@ -32,8 +34,9 @@ class Food {
     String? id,
     String? name,
     String? description,
+    String? mealType,
     String? imageUrl,
-    String? servingSize,
+    int? servingSize,
     String? servingUnit,
     int? servings,
     Nutrition? nutritions,
@@ -43,6 +46,7 @@ class Food {
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
+      mealType: mealType ?? this.mealType,
       imageUrl: imageUrl ?? this.imageUrl,
       servingSize: servingSize ?? this.servingSize,
       servingUnit: servingUnit ?? this.servingUnit,
@@ -52,23 +56,48 @@ class Food {
     );
   }
 
-  factory Food.fromMap({required Map snapshot, required String id}) {
-    return Food(
-        id: id,
-        description: snapshot['description'] ?? '',
-        name: snapshot['name'] ?? '',
-        imageUrl: snapshot['imageUrl'] ?? '',
-        nutritions: snapshot['nutritions'] == null
-            ? null
-            : Nutrition.fromMap(snapshot['nutritions']),
-        servings: snapshot['servings'] ?? 0,
-        servingSize: snapshot['servingSize'] ?? '',
-        servingUnit: snapshot['servingUnit'] ?? '',
-        categories: snapshot['categories'] == null
-            ? []
-            : (snapshot['categories'] as List)
-                .map((e) => Category(title: e as String))
-                .toList());
+  factory Food.fromSnapshot(
+      {required QueryDocumentSnapshot<Map<String, dynamic>> snapshot}) {
+    var data = snapshot.data();
+    //print(data['categories']);
+    return Food.fromJson(data).copyWith(id: snapshot.id);
+  }
+
+  Food.fromJson(Map<String, dynamic> data)
+      : this(
+            name: data['name'] ?? '',
+            description: data['description'] ?? '',
+            mealType: data['mealType'] ?? '',
+            imageUrl: data['imageUrl'] ?? '',
+            nutritions: data['nutritions'] == null
+                ? null
+                : Nutrition.fromMap(data['nutritions']),
+            servings: data['servings'] != null
+                ? int.parse(data['servings'].toString())
+                : 0,
+            servingSize: data['servingSize'] != null
+                ? int.parse(data['servingSize'].toString())
+                : 0,
+            servingUnit: data['servingUnit'] ?? '',
+            categories: data['categories'] == null
+                ? []
+                : (data['categories'] as List)
+                    .map((e) => Category(title: e as String))
+                    .toList());
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'description': description,
+      'mealType': mealType,
+      'imageUrl': imageUrl,
+      'servingSize': servingSize,
+      'servingUnit': servingUnit,
+      'servings': servings,
+      'categories':
+          categories == null ? {} : categories!.map((e) => e.title).toList(),
+      'nutritions': nutritions?.toMap()
+    };
   }
 
   // Stream<List<Food>> streamFood() {
@@ -92,10 +121,24 @@ class Nutrition {
 
   factory Nutrition.fromMap(Map<String, dynamic> data) {
     return Nutrition(
-        calories: data['calories'] ?? 0,
-        fat: data['fat'] ?? 0,
-        carbohydrates: data['carbohydrates'] ?? 0,
-        protein: data['protein'] ?? 0);
+      calories:
+          data['calories'] != null ? int.parse(data['calories'].toString()) : 0,
+      fat: data['fats'] != null ? int.parse(data['fats'].toString()) : 0,
+      carbohydrates: data['carbohydrates'] != null
+          ? int.parse(data['carbohydrates'].toString())
+          : 0,
+      protein:
+          data['protein'] != null ? int.parse(data['protein'].toString()) : 0,
+    );
+  }
+
+  Map toMap() {
+    return {
+      'calories': calories,
+      'fat': fat,
+      'protein': protein,
+      'carbohydrates': carbohydrates,
+    };
   }
 
   Nutrition copyWith({
