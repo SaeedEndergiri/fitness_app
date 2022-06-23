@@ -1,4 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitness_app/screens/add_food_screen.dart';
+import 'package:fitness_app/screens/auth_screen.dart';
+import 'package:fitness_app/screens/food_detail_screen.dart';
 import 'package:fitness_app/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -26,9 +29,17 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSwatch()
               .copyWith(primary: Colors.blue, onPrimary: Colors.white),
         ),
-        home: HomeScreen(),
+        home: StreamBuilder(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (ctx, userSnapshot) {
+              if (userSnapshot.hasData) {
+                return HomeScreen();
+              }
+              return AuthScreen();
+            }),
         routes: {
           AddFoodScreen.routeName: (ctx) => AddFoodScreen(),
+          FoodDetailScreen.routeName: (ctx) => FoodDetailScreen(),
         },
       ),
     );

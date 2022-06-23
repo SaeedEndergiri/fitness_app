@@ -3,15 +3,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:fitness_app/screens/add_food_screen.dart';
+import 'package:fitness_app/screens/food_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/category.dart';
+import '../models/food.dart';
 import '../providers/foods.dart';
 
 class MealCard extends StatefulWidget {
   final String mealType;
+  final DateTime date;
+  final Foods foodData;
   const MealCard(
     this.mealType,
+    this.date,
+    this.foodData,
   );
 
   @override
@@ -19,9 +26,9 @@ class MealCard extends StatefulWidget {
 }
 
 class _MealCardState extends State<MealCard> {
-  void openAddFoodScreen(String mealType) {
+  void openAddFoodScreen(String mealType, DateTime date) {
     Navigator.of(context)
-        .pushNamed(AddFoodScreen.routeName, arguments: mealType);
+        .pushNamed(AddFoodScreen.routeName, arguments: [mealType, date]);
   }
 
   String capitalize(String text) {
@@ -32,100 +39,147 @@ class _MealCardState extends State<MealCard> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: Provider.of<Foods>(context, listen: false)
-          .fetchAndSetFoods(widget.mealType),
-      builder: (ctx, dataSnapshot) {
-        // print(dataSnapshot);
-        if (dataSnapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-        if (dataSnapshot.error != null) {
-          return Text('Error Occurred');
-        } else {
-          return Consumer<Foods>(
-            builder: (context, foodData, child) {
-              var meals = foodData.mealTypeItems(widget.mealType);
-              return Container(
-                margin: EdgeInsets.symmetric(horizontal: 0, vertical: 5),
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    List<Food> meals = widget.foodData.mealTypeItems(widget.mealType);
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 0, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${capitalize(widget.mealType)}',
+                style: TextStyle(fontSize: 23),
+              ),
+              Text(
+                '${Foods.totalCalories(meals)}',
+                style: TextStyle(fontSize: 23),
+              ),
+            ],
+          ),
+          ListView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: meals.length,
+              itemBuilder: (ctx, i) {
+                //print(foodData.items.length);
+                return Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${capitalize(widget.mealType)}',
-                          style: TextStyle(fontSize: 23),
-                        ),
-                        Text(
-                          '${Foods.totalCalories(meals)}',
-                          style: TextStyle(fontSize: 23),
-                        ),
-                      ],
+                    Divider(
+                      height: 10,
+                      thickness: 0.8,
                     ),
-                    ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: meals.length,
-                        itemBuilder: (ctx, i) {
-                          //print(foodData.items.length);
-                          return Container(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                    Dismissible(
+                      key: ValueKey(meals[i].id),
+                      background: Container(
+                        decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.error,
+                            borderRadius: BorderRadius.circular(4)),
+                        alignment: Alignment.centerRight,
+                        child: const Icon(
+                          Icons.delete,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      ),
+                      onDismissed: (direction) {
+                        meals[i].copyWith(
+                            categories: meals[i].categories
+                              ?..removeWhere(
+                                ((element) {
+                                  return element.title == widget.mealType;
+                                }),
+                              ));
+                        widget.foodData
+                            .updateFood(meals[i].id as String, meals[i]);
+                      },
+                      direction: DismissDirection.endToStart,
+                      confirmDismiss: (direction) {
+                        return showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Are you sure?'),
+                            content: const Text(
+                                'Do you want to remove the item from the cart?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(ctx).pop(false);
+                                },
+                                child: const Text('No'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(ctx).pop(true);
+                                },
+                                child: const Text('Yes'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.of(context).pushNamed(
+                              FoodDetailScreen.routeName,
+                              arguments: meals[i]);
+                        },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Divider(),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      meals[i].name,
-                                      style: TextStyle(fontSize: 18),
+                                Flexible(
+                                  child: Text(
+                                    meals[i].name,
+                                    style: TextStyle(
+                                      fontSize: 20,
                                     ),
-                                    Text(
-                                      meals[i].nutritions!.calories.toString(),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(
-                                  height: 10,
-                                ),
-                                if (meals[i].description.isNotEmpty)
-                                  Text(
-                                    meals[i].description,
                                   ),
+                                ),
+                                Text(
+                                  meals[i].nutritions!.calories.toString(),
+                                ),
                               ],
                             ),
-                          );
-                        }),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                          onPressed: () {
-                            openAddFoodScreen(widget.mealType);
-                          },
-                          child: Text('Add food'.toUpperCase()),
+                            SizedBox(
+                              height: 10,
+                            ),
+                            if (meals[i].description.isNotEmpty)
+                              Text(
+                                meals[i].description,
+                              ),
+                          ],
                         ),
-                        InkWell(
-                          borderRadius: BorderRadius.circular(100),
-                          onTap: () {},
-                          child: Icon(Icons.more_horiz),
-                        )
-                      ],
-                    )
+                      ),
+                    ),
                   ],
-                ),
-              );
-            },
-          );
-        }
-      },
+                );
+              }),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                onPressed: () {
+                  openAddFoodScreen(widget.mealType, widget.date);
+                },
+                child: Text('Add food'.toUpperCase()),
+              ),
+              InkWell(
+                borderRadius: BorderRadius.circular(100),
+                onTap: () {},
+                child: Icon(Icons.more_horiz),
+              )
+            ],
+          )
+        ],
+      ),
     );
   }
 }
