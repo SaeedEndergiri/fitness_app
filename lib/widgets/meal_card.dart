@@ -1,4 +1,5 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -37,148 +38,302 @@ class _MealCardState extends State<MealCard> {
     return "${text[0].toUpperCase()}${text.substring(1)}";
   }
 
+  void updateMealType(
+      BuildContext ctx, Food meal, DateTime date, String mealType) {
+    var newCategories;
+    if (meal.mealType != mealType) {
+      if (meal.categories!.any((element) => element.title == mealType)) {
+        newCategories = meal.categories;
+      } else {
+        newCategories = meal.categories!..add(Category(title: mealType));
+      }
+      var newFood =
+          meal.copyWith(mealType: mealType, categories: newCategories);
+      widget.foodData.updateFood(meal.id as String, date, newFood);
+    }
+    Navigator.of(ctx).pop();
+  }
+
+  void showMealDialogOnLongTap(meal) {
+    showDialog(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            title: Text('Diary'),
+            actionsAlignment: MainAxisAlignment.start,
+            actions: [
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      showDialog(
+                          context: context,
+                          builder: (ictx) {
+                            return AlertDialog(
+                              title: Text('Move to...'),
+                              actionsAlignment: MainAxisAlignment.start,
+                              actions: [
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: InkWell(
+                                            onTap: () {
+                                              updateMealType(ictx, meal,
+                                                  widget.date, 'breakfast');
+                                            },
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                  top: 8.0,
+                                                  right: 8.0,
+                                                  bottom: 8.0),
+                                              child: Text(
+                                                'Breakfast',
+                                                style: TextStyle(fontSize: 18),
+                                                textAlign: TextAlign.start,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: InkWell(
+                                            onTap: () {
+                                              updateMealType(ictx, meal,
+                                                  widget.date, 'lunch');
+                                            },
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                  top: 8.0,
+                                                  right: 8.0,
+                                                  bottom: 8.0),
+                                              child: Text(
+                                                'Lunch',
+                                                style: TextStyle(fontSize: 18),
+                                                textAlign: TextAlign.start,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: InkWell(
+                                            onTap: () {
+                                              updateMealType(ictx, meal,
+                                                  widget.date, 'dinner');
+                                            },
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                  top: 8.0,
+                                                  right: 8.0,
+                                                  bottom: 8.0),
+                                              child: Text(
+                                                'Dinner',
+                                                style: TextStyle(fontSize: 18),
+                                                textAlign: TextAlign.start,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: InkWell(
+                                            onTap: () {
+                                              updateMealType(ictx, meal,
+                                                  widget.date, 'snacks');
+                                            },
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                  top: 8.0,
+                                                  right: 8.0,
+                                                  bottom: 8.0),
+                                              child: Text(
+                                                'Snacks',
+                                                style: TextStyle(fontSize: 18),
+                                                textAlign: TextAlign.start,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                )
+                              ],
+                            );
+                          });
+                    },
+                    icon: Transform(
+                      alignment: Alignment.center,
+                      transform: Matrix4.rotationY(pi),
+                      child: Icon(
+                        Icons.reply,
+                      ),
+                    ),
+                    label: Text('Move to...'),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      widget.foodData
+                          .removeFood(widget.date, meal.id as String);
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Deleted Successfully!',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: Icon(Icons.delete),
+                    label: Text('Delete Entry'),
+                  ),
+                ],
+              ),
+            ],
+          );
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     List<Food> meals = widget.foodData.mealTypeItems(widget.mealType);
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 0, vertical: 5),
-      padding: EdgeInsets.symmetric(horizontal: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${capitalize(widget.mealType)}',
-                style: TextStyle(fontSize: 23),
-              ),
-              Text(
-                '${Foods.totalCalories(meals)}',
-                style: TextStyle(fontSize: 23),
-              ),
-            ],
-          ),
-          ListView.builder(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              itemCount: meals.length,
-              itemBuilder: (ctx, i) {
-                //print(foodData.items.length);
-                return Column(
-                  children: [
-                    Divider(
-                      height: 10,
-                      thickness: 0.8,
+      //padding: EdgeInsets.symmetric(horizontal: 8),
+      child: Card(
+        margin: EdgeInsets.zero,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(0.0),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14.0, vertical: 3),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${capitalize(widget.mealType)}',
+                    style: TextStyle(fontSize: 23),
+                  ),
+                  Text(
+                    '${Foods.totalCalories(meals)}',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
-                    Dismissible(
-                      key: ValueKey(meals[i].id),
-                      background: Container(
-                        decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.error,
-                            borderRadius: BorderRadius.circular(4)),
-                        alignment: Alignment.centerRight,
-                        child: const Icon(
-                          Icons.delete,
-                          color: Colors.white,
-                          size: 40,
-                        ),
+                  ),
+                ],
+              ),
+            ),
+            ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: meals.length,
+                itemBuilder: (ctx, i) {
+                  //print(foodData.items.length);
+                  return Column(
+                    children: [
+                      Divider(
+                        height: 1,
+                        thickness: 0.8,
                       ),
-                      onDismissed: (direction) {
-                        meals[i].copyWith(
-                            categories: meals[i].categories
-                              ?..removeWhere(
-                                ((element) {
-                                  return element.title == widget.mealType;
-                                }),
-                              ));
-                        widget.foodData
-                            .updateFood(meals[i].id as String, meals[i]);
-                      },
-                      direction: DismissDirection.endToStart,
-                      confirmDismiss: (direction) {
-                        return showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Are you sure?'),
-                            content: const Text(
-                                'Do you want to remove the item from the cart?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(ctx).pop(false);
-                                },
-                                child: const Text('No'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(ctx).pop(true);
-                                },
-                                child: const Text('Yes'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      child: InkWell(
+                      InkWell(
                         onTap: () {
                           Navigator.of(context).pushNamed(
                               FoodDetailScreen.routeName,
-                              arguments: meals[i]);
+                              arguments: [meals[i], widget.date]);
                         },
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    meals[i].name,
-                                    style: TextStyle(
-                                      fontSize: 20,
+                        onLongPress: () {
+                          // print(meals[i].id);
+                          showMealDialogOnLongTap(meals[i]);
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 14.0, vertical: 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      meals[i].name,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Text(
-                                  meals[i].nutritions!.calories.toString(),
-                                ),
-                              ],
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            if (meals[i].description.isNotEmpty)
-                              Text(
-                                meals[i].description,
+                                  Text(
+                                    meals[i].nutritions!.calories.toString(),
+                                    style: TextStyle(fontSize: 18),
+                                  ),
+                                ],
                               ),
-                          ],
+                              SizedBox(
+                                height: 10,
+                              ),
+                              if (meals[i].description.isNotEmpty)
+                                Text(
+                                  meals[i].description,
+                                ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              }),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                onPressed: () {
-                  openAddFoodScreen(widget.mealType, widget.date);
-                },
-                child: Text('Add food'.toUpperCase()),
+                    ],
+                  );
+                }),
+            Divider(
+              height: 1,
+              thickness: 0.8,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                    onPressed: () {
+                      openAddFoodScreen(widget.mealType, widget.date);
+                    },
+                    child: Text('Add food'.toUpperCase()),
+                  ),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(100),
+                    onTap: () {},
+                    child: Icon(Icons.more_horiz),
+                  )
+                ],
               ),
-              InkWell(
-                borderRadius: BorderRadius.circular(100),
-                onTap: () {},
-                child: Icon(Icons.more_horiz),
-              )
-            ],
-          )
-        ],
+            )
+          ],
+        ),
       ),
     );
   }

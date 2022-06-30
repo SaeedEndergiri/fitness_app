@@ -3,6 +3,7 @@ import 'package:fitness_app/screens/add_food_screen.dart';
 import 'package:fitness_app/screens/auth_screen.dart';
 import 'package:fitness_app/screens/food_detail_screen.dart';
 import 'package:fitness_app/screens/home_screen.dart';
+import 'package:fitness_app/screens/tracker_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -17,8 +18,21 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({Key? key}) : super(key: key);
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late Stream<User?> auth;
+  @override
+  void initState() {
+    auth = FirebaseAuth.instance.authStateChanges();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
@@ -30,7 +44,7 @@ class MyApp extends StatelessWidget {
               .copyWith(primary: Colors.blue, onPrimary: Colors.white),
         ),
         home: StreamBuilder(
-            stream: FirebaseAuth.instance.authStateChanges(),
+            stream: auth,
             builder: (ctx, userSnapshot) {
               if (userSnapshot.hasData) {
                 return HomeScreen();
@@ -40,6 +54,7 @@ class MyApp extends StatelessWidget {
         routes: {
           AddFoodScreen.routeName: (ctx) => AddFoodScreen(),
           FoodDetailScreen.routeName: (ctx) => FoodDetailScreen(),
+          TrackerScreen.routeName: (ctx) => TrackerScreen(),
         },
       ),
     );

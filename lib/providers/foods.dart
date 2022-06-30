@@ -28,7 +28,7 @@ class Foods with ChangeNotifier {
     return querySnapshot.docs.map((snapshot) {
       final Map<String, dynamic> dataMap =
           snapshot.data() as Map<String, dynamic>;
-      return Food.fromJson(dataMap).copyWith(id: snapshot.id);
+      return Food.fromJson(dataMap);
     }).toList();
   }
 
@@ -38,36 +38,49 @@ class Foods with ChangeNotifier {
   }
 
   Future<void> fetchAndSetFoods(DateTime date) async {
-    // final dataList = await DatabaseServices.getFoodData(date);
-    // try {
-    //   _items = dataList.map(
-    //     (food) {
-    //       //print(food.id);
-    //       return Food.fromSnapshot(snapshot: food);
-    //     },
-    //   ).toList();
-    // } on Exception catch (e) {
-    //   print(e);
-    // }
+    final dataList = await DatabaseServices.getFoodData(date);
+    try {
+      _items = dataList.map(
+        (food) {
+          // print(food.id);
+          return Food.fromSnapshot(snapshot: food);
+        },
+      ).toList();
+    } on Exception catch (e) {
+      print(e);
+    }
     // print(_items);
-    // notifyListeners();
+    notifyListeners();
+  }
+
+  Future<void> removeFood(DateTime date, String id) async {
+    final foodIdx = _items.indexWhere((food) => food.id == id);
+    if (foodIdx >= 0) {
+      _items.removeAt(foodIdx);
+      notifyListeners();
+      await DatabaseServices.removeFood(date, id);
+    } else {
+      print('error');
+    }
   }
 
   Future<void> addFood(Food foodData, DateTime date) async {
     try {
-      _items.add(foodData);
+      var docId = await DatabaseServices.addNewFood(foodData.toJson(), date);
+      Food newFood = foodData.copyWith(id: docId);
+      _items.add(newFood);
       notifyListeners();
-      await DatabaseServices.addNewFood(foodData.toJson(), date);
     } on Exception catch (e) {
       print(e);
     }
     print('successful');
   }
 
-  Future<void> updateFood(String id, Food newFood) async {
+  Future<void> updateFood(String id, DateTime date, Food newFood) async {
     final foodIdx = _items.indexWhere((food) => food.id == id);
     if (foodIdx >= 0) {
-      await DatabaseServices.updateFood(newFood.toJson());
+      await DatabaseServices.updateFood(
+          newFood.id as String, date, newFood.toJson());
       _items[foodIdx] = newFood;
       notifyListeners();
     } else {

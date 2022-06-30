@@ -5,13 +5,12 @@ import 'dart:convert';
 import 'category.dart';
 
 class Food {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
   String? id;
   String name;
   String description;
   String mealType;
   String imageUrl;
-  int servingSize;
+  double servingSize;
   String servingUnit;
   int servings;
   Nutrition? nutritions;
@@ -36,7 +35,7 @@ class Food {
     String? description,
     String? mealType,
     String? imageUrl,
-    int? servingSize,
+    double? servingSize,
     String? servingUnit,
     int? servings,
     Nutrition? nutritions,
@@ -76,7 +75,7 @@ class Food {
                 ? int.parse(data['servings'].toString())
                 : 0,
             servingSize: data['servingSize'] != null
-                ? int.parse(data['servingSize'].toString())
+                ? double.parse(data['servingSize'].toString())
                 : 0,
             servingUnit: data['servingUnit'] ?? '',
             categories: data['categories'] == null
