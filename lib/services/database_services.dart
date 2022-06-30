@@ -27,17 +27,26 @@ class DatabaseServices {
     return foodData;
   }
 
-  static Future<void> addNewFood(
+  static Future<String> addNewFood(
       Map<String, dynamic> data, DateTime date) async {
     final foodCollectionRef = getCollectionRef(date);
-    foodCollectionRef.add(data);
+    String docId = await foodCollectionRef.add(data).then((value) => value.id);
     print('add done!');
+    return docId;
   }
 
 //usersMeals/${_auth.currentUser?.uid}/date/$date/$mealType/foods
-  static Future<void> updateFood(Map<String, dynamic> newFood) async {
-    final foodCollectionRef = getCollectionRef(DateTime.now());
-    foodCollectionRef.add(newFood);
+  static Future<void> updateFood(
+      String id, DateTime date, Map<String, dynamic> newFood) async {
+    //print(newFood['id']);
+    final foodCollectionRef = getCollectionRef(date);
+    foodCollectionRef.doc(id).update(newFood);
     print('update done!');
+  }
+
+  static Future<void> removeFood(DateTime date, String id) async {
+    final foodCollectionRef = getCollectionRef(date);
+    foodCollectionRef.doc(id).delete();
+    print('delete done!');
   }
 }

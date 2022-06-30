@@ -18,67 +18,38 @@ class _FoodTrackingCardState extends State<FoodTrackingCard> {
   Widget build(BuildContext context) {
     return Consumer<Foods>(
       builder: (context, foods, child) {
-        var totalCalories = Foods.totalCalories(
-            foods.mealTypeItems('breakfast') +
-                foods.mealTypeItems('lunch') +
-                foods.mealTypeItems('dinner') +
-                foods.mealTypeItems('snacks'));
+        var breakfastCalories =
+            Foods.totalCalories(foods.mealTypeItems('breakfast'));
+        var lunchCalories = Foods.totalCalories(foods.mealTypeItems('lunch'));
+        var dinnerCalories = Foods.totalCalories(foods.mealTypeItems('dinner'));
+        var snacksCalories = Foods.totalCalories(foods.mealTypeItems('snacks'));
+        var calories = {
+          'breakfast': breakfastCalories,
+          'lunch': lunchCalories,
+          'dinner': dinnerCalories,
+          'snacks': snacksCalories,
+        };
+        var totalCalories =
+            calories.values.reduce((sum, element) => sum + element);
+
         final targetCalories = 5000;
         final prctCalories = double.parse(
             ((totalCalories / targetCalories) * 100).toStringAsFixed(2));
-        return Container(
-          //color: Colors.green,
-          width: double.infinity,
-          height: 250,
-          margin: EdgeInsets.symmetric(
-            horizontal: 24,
-          ),
-          child: Column(
-            children: [
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    MyPieChart(
-                      targetCalories: targetCalories.toDouble(),
-                      totalCalories: totalCalories.toDouble(),
-                      prctCalories: prctCalories.round(),
-                    ),
-                    Card(
-                      elevation: 4,
-                      child: Container(
-                        // color: Colors.lightGreen,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 10, horizontal: 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Calories',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                            Text(
-                              '$totalCalories',
-                              style: TextStyle(fontSize: 50),
-                            ),
-                            Text(
-                              '$prctCalories% of daily target',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                            Text(
-                              'Target Calories: $targetCalories',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              MyBarChart(),
-              //BarChart()
-            ],
+        return Card(
+          margin: EdgeInsets.zero,
+          child: Container(
+            //color: Colors.green,
+            width: double.infinity,
+            height: 250,
+            margin: EdgeInsets.symmetric(
+              horizontal: 24,
+            ),
+            child: MyPieChart(
+              calories: calories,
+              targetCalories: targetCalories.toDouble(),
+              totalCalories: totalCalories.toDouble(),
+              prctCalories: prctCalories.round(),
+            ),
           ),
         );
       },
